@@ -211,60 +211,143 @@ export default function Canvas() {
 }
 
 /**
- * 手腕剪影：用一个椭圆形 + 渐变模拟从画布中心穿过的手腕。
- * 没有真实图，全部 CSS 绘制；皮肤色用偏暖的米色，配合上下阴影。
+ * 手部插画：SVG 绘制一只手，手腕在画布中心（圆环倾斜后正好套在手腕上），
+ * 手掌+手指向上伸出（在圆环之上），手臂从下方进入画面。
+ * 全部矢量，零素材依赖；颜色用暖米色调与背景相协。
  */
-function WristSilhouette({ size, color }: { size: number; color: string }) {
-  // 椭圆"手腕"：宽度 ≈ 圆环直径的 60%，高度 ≈ 圆环直径的 22%
-  const w = size * 0.55;
-  const h = size * 0.2;
+function WristSilhouette({ size }: { size: number; color: string }) {
+  const w = size * 0.92;
+  const h = size * 1.35; // 比画布高，让手臂自然延伸出底部
+
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 12 }}
+      transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
       className="absolute pointer-events-none"
       style={{
         width: w,
         height: h,
+        // 让"手腕"位置（SVG 中 y≈220）落到画布中心
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -42%)',
         zIndex: 0,
-        // 上方边线柔和、下方边线略深，模拟从画布上方往下伸的手臂
-        background:
-          'linear-gradient(180deg, #f3dcc6 0%, #ecc7a6 50%, #d2a583 100%)',
-        borderRadius: '50%',
-        boxShadow:
-          `inset 0 -${h * 0.25}px ${h * 0.4}px rgba(120,70,30,0.4),
-           inset 0 ${h * 0.15}px ${h * 0.3}px rgba(255,240,220,0.6),
-           0 ${h * 0.2}px ${h * 0.4}px rgba(80,40,10,0.18)`,
+        filter: 'drop-shadow(0 18px 24px rgba(80, 40, 10, 0.18))',
       }}
     >
-      {/* 手臂上方继续延伸的剪影 —— 加在椭圆上方 */}
-      <div
-        className="absolute"
-        style={{
-          left: '50%',
-          top: -h * 1.4,
-          transform: 'translateX(-50%)',
-          width: w * 0.86,
-          height: h * 1.6,
-          background:
-            'linear-gradient(180deg, transparent 0%, #ecc7a655 25%, #ecc7a6 80%)',
-          borderRadius: '40% 40% 50% 50% / 60% 60% 50% 50%',
-          filter: 'blur(2px)',
-        }}
-      />
-      {/* 手腕下方阴影增强深度 */}
-      <div
-        aria-hidden
-        className="absolute -inset-x-2"
-        style={{
-          bottom: -h * 0.05,
-          height: h * 0.5,
-          background: `radial-gradient(50% 100% at 50% 0%, ${color}55, transparent 70%)`,
-          filter: 'blur(6px)',
-        }}
-      />
+      <svg viewBox="0 0 240 360" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="skin-main" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor="#fce4ce" />
+            <stop offset="55%"  stopColor="#f1c8a8" />
+            <stop offset="100%" stopColor="#d8a684" />
+          </linearGradient>
+          <linearGradient id="skin-side" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"  stopColor="#b88563" stopOpacity="0.55" />
+            <stop offset="50%" stopColor="#000"    stopOpacity="0" />
+            <stop offset="100%" stopColor="#b88563" stopOpacity="0.55" />
+          </linearGradient>
+          <radialGradient id="palm-shade" cx="50%" cy="60%" r="55%">
+            <stop offset="0%"  stopColor="#a86842" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="#a86842" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+
+        {/* 手掌 + 拇指 + 四指（一根 path 描出整体轮廓）。
+            坐标系约定：x 0-240，y 0-360，y 较小靠上。
+            手腕在 y≈210-235，手掌核心在 y≈100-210，
+            食指/中指/无名指/小指从 y≈100 向上延伸到 y≈10-30，
+            拇指在左侧从 y≈170 伸到 y≈70 */}
+        <path
+          d="
+            M 80 360
+            L 80 240
+            Q 80 220 78 210
+            Q 60 190 56 165
+            Q 50 130 60 110
+            Q 70 95 78 90
+            L 70 50
+            Q 65 18 80 12
+            Q 95 8 100 38
+            L 105 90
+            L 108 90
+            L 108 30
+            Q 108 4 122 4
+            Q 136 4 136 30
+            L 136 90
+            L 140 90
+            L 140 38
+            Q 140 12 154 12
+            Q 168 12 168 38
+            L 165 95
+            L 168 95
+            L 175 60
+            Q 180 38 192 40
+            Q 204 44 198 70
+            L 188 120
+            Q 188 160 182 195
+            Q 178 220 170 240
+            L 170 360
+            Z
+          "
+          fill="url(#skin-main)"
+          stroke="#a06d4a"
+          strokeWidth="1.2"
+          strokeOpacity="0.35"
+        />
+
+        {/* 边缘暗化（让手有立体感） */}
+        <path
+          d="
+            M 80 360
+            L 80 240
+            Q 80 220 78 210
+            Q 60 190 56 165
+            Q 50 130 60 110
+            Q 70 95 78 90
+            L 70 50
+            Q 65 18 80 12
+            Q 95 8 100 38
+            L 105 90
+            L 108 90
+            L 108 30
+            Q 108 4 122 4
+            Q 136 4 136 30
+            L 136 90
+            L 140 90
+            L 140 38
+            Q 140 12 154 12
+            Q 168 12 168 38
+            L 165 95
+            L 168 95
+            L 175 60
+            Q 180 38 192 40
+            Q 204 44 198 70
+            L 188 120
+            Q 188 160 182 195
+            Q 178 220 170 240
+            L 170 360
+            Z
+          "
+          fill="url(#skin-side)"
+        />
+
+        {/* 掌心阴影 */}
+        <ellipse cx="120" cy="160" rx="46" ry="40" fill="url(#palm-shade)" />
+
+        {/* 指节高光（让手指有结构） */}
+        <g opacity="0.45">
+          <ellipse cx="84"  cy="60"  rx="6"  ry="3" fill="#fff7e6" />
+          <ellipse cx="120" cy="38"  rx="7"  ry="3" fill="#fff7e6" />
+          <ellipse cx="153" cy="46"  rx="6"  ry="3" fill="#fff7e6" />
+          <ellipse cx="184" cy="76"  rx="5"  ry="2.5" fill="#fff7e6" />
+        </g>
+
+        {/* 手腕处一道柔和的横向暗带，圆环戴上去后正好压在这里 */}
+        <ellipse cx="125" cy="232" rx="52" ry="6" fill="#a86842" opacity="0.18" />
+      </svg>
     </motion.div>
   );
 }
