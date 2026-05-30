@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* 主题：随当前主导水晶切换的色调（H/S/L 在 JS 里更新） */
+  --bg-h: 270;
+  --bg-s: 70%;
+  --bg-l: 96%;
+
+  --bg-1: hsl(var(--bg-h) var(--bg-s) var(--bg-l));
+  --bg-2: hsl(calc(var(--bg-h) + 25) calc(var(--bg-s) - 10%) calc(var(--bg-l) - 4%));
+  --bg-3: hsl(calc(var(--bg-h) - 30) calc(var(--bg-s) - 15%) calc(var(--bg-l) - 2%));
+
+  --ink:  #2a2240;
+  --ink2: #5a5478;
+  --line: #e8e2f3;
+
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', system-ui, sans-serif;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  overscroll-behavior: none;
+  background: var(--bg-1);
+}
+
+* { -webkit-tap-highlight-color: transparent; }
+
+/* 全局背景：呼吸式渐变（动画在元素上单独触发） */
+.app-bg {
+  position: fixed; inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(60% 50% at 20% 10%, var(--bg-2), transparent 70%),
+    radial-gradient(70% 60% at 80% 90%, var(--bg-3), transparent 70%),
+    var(--bg-1);
+  transition: background 1.6s ease;
+}
+
+/* 顶部胶囊 */
+.cap {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid rgba(255,255,255,0.7);
+  box-shadow: 0 8px 24px -10px rgba(60,30,120,0.18);
+}
+
+/* 抽屉毛玻璃 */
+.glass {
+  background: rgba(255,255,255,0.78);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+}
+
+/* hide scrollbar but allow scroll */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* 单颗珠子的样式由组件 inline 渲染（受类型颜色控制） */
+
+/* 闪光效果（生成能量卡时使用） */
+@keyframes shimmer {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(220%); }
+}
+.shimmer::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.55) 50%, transparent 70%);
+  transform: translateX(-120%);
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* 数字滚动 */
+.tabular { font-variant-numeric: tabular-nums; }

@@ -1,0 +1,15 @@
+.DS_Store
+.idea/
+.vscode/
+*.log
+
+# deps & build
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+
+# misc
+*.tsbuildinfo
+.cache/
