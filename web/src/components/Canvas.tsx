@@ -33,19 +33,15 @@ export default function Canvas() {
 
   const minSide = Math.min(size.w, size.h);
 
-  // 1mm => px 缩放比：让总周长 C 在画布短边的 ~78% 内
-  const mmToPx = useMemo(() => {
-    const C = types.reduce((s, t) => s + t.size, 0);
-    if (C === 0) return 5;
-    const targetDiameter = minSide * 0.78;
-    const targetR = targetDiameter / 2;
-    const Rmm = C / (2 * Math.PI);
-    return targetR / Math.max(Rmm, 1);
-  }, [types, minSide]);
+  // 物理常数：1mm 在画布上恒等于多少 px。
+  // 珠子永远保持真实尺寸（8/10/12mm 比例固定），珠子越多 → 圆环越大，
+  // 而不是反过来缩小珠子。
+  // 这里取 minSide / 64 作为基准，即 8mm 珠子 ≈ minSide/8。
+  const mmToPx = minSide / 64;
 
   const layout = useMemo(
-    () => layoutRing(types, { mmToPx, maxRadiusPx: minSide * 0.42 }),
-    [types, mmToPx, minSide],
+    () => layoutRing(types, { mmToPx }),
+    [types, mmToPx],
   );
 
   // 主导色作为光晕

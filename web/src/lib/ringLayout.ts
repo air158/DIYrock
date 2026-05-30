@@ -54,18 +54,19 @@ export interface LayoutOptions {
  */
 export function layoutRing(types: BeadType[], opts: LayoutOptions): RingLayout {
   const startAngle = opts.startAngle ?? -Math.PI / 2;
-  let mmToPx = opts.mmToPx;
+  const mmToPx = opts.mmToPx;
 
   const C = types.reduce((s, t) => s + t.size, 0); // mm
   const R_mm = C > 0 ? C / (2 * Math.PI) : 0;
 
-  // 自适应缩放：超出 maxRadiusPx 时整体缩比
-  if (opts.maxRadiusPx && R_mm * mmToPx > opts.maxRadiusPx) {
-    mmToPx = opts.maxRadiusPx / R_mm;
-  }
+  // 注意：这里不再因为超限而反向缩小 mmToPx —— 珠子的物理尺寸必须恒定。
+  // 当圆环过大时只允许其超出画布（顶部"长度过长"会提示用户），
+  // 缩比只在调用方主动调整 mmToPx 时发生。
   let R_px = R_mm * mmToPx;
+  if (opts.maxRadiusPx && R_px > opts.maxRadiusPx) {
+    R_px = opts.maxRadiusPx;
+  }
   if (opts.minRadiusPx && R_px < opts.minRadiusPx) {
-    // 不调整 mmToPx（保持珠子大小），仅"扯开"成更大的圈
     R_px = opts.minRadiusPx;
   }
 
