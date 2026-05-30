@@ -7,6 +7,7 @@ import AIPanel from './components/AIPanel';
 import PosterModal from './components/PosterModal';
 import MeaningCard from './components/MeaningCard';
 import Splash from './components/Splash';
+import PreviewToggle from './components/PreviewToggle';
 import { deriveDominantType, useDesigner } from './state/store';
 
 export default function App() {
@@ -37,6 +38,7 @@ export default function App() {
         </div>
         <div className="mt-2 px-4 flex items-center gap-2">
           <AIPanel />
+          <PreviewToggle />
           <div className="flex-1" />
           <MeaningCard />
         </div>

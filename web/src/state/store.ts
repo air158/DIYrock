@@ -28,6 +28,8 @@ interface DesignerState {
   posterOpen: boolean;
   /** 最近一次拒绝添加的提示（手围超长时） */
   rejectAt: number;
+  /** 试戴预览模式（圆环倾斜 + 手腕剪影） */
+  previewMode: boolean;
 
   add: (typeId: string, fromPoint?: { x: number; y: number }) => boolean;
   remove: (uid: string) => void;
@@ -37,6 +39,7 @@ interface DesignerState {
   setRecipeLoading: (b: boolean) => void;
   applyRecipe: (r: AIRecipe) => void;
   openPoster: (b: boolean) => void;
+  setPreview: (b: boolean) => void;
 }
 
 /** 手围（mm）硬上限：22.5cm = 225mm，对应大码男士手腕 */
@@ -61,6 +64,7 @@ export const useDesigner = create<DesignerState>((set, get) => ({
   recipeLoading: false,
   posterOpen: false,
   rejectAt: 0,
+  previewMode: false,
 
   add: (typeId, fromPoint) => {
     const t = findType(typeId);
@@ -97,6 +101,7 @@ export const useDesigner = create<DesignerState>((set, get) => ({
       return { beads: next, recipe: r, selectedUid: null };
     }),
   openPoster: (b) => set({ posterOpen: b }),
+  setPreview: (b) => set({ previewMode: b }),
 }));
 
 /** 派生：对应类型快照（顺序与 beads 一致）—— 不要直接做 store selector，调用方需用 useMemo */
