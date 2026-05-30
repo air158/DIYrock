@@ -26,8 +26,10 @@ interface DesignerState {
   recipeLoading: boolean;
   /** 完成设计后翻面海报 */
   posterOpen: boolean;
+  /** 最近一次拒绝添加的提示（手围超长时） */
+  rejectAt: number;
 
-  add: (typeId: string, fromPoint?: { x: number; y: number }) => void;
+  add: (typeId: string, fromPoint?: { x: number; y: number }) => boolean;
   remove: (uid: string) => void;
   clear: () => void;
   select: (uid: string | null) => void;
@@ -36,6 +38,9 @@ interface DesignerState {
   applyRecipe: (r: AIRecipe) => void;
   openPoster: (b: boolean) => void;
 }
+
+/** 手围（mm）硬上限：22.5cm = 225mm，对应大码男士手腕 */
+export const MAX_WRIST_MM = 225;
 
 let _uid = 0;
 const newUid = () => `b_${Date.now().toString(36)}_${(_uid++).toString(36)}`;
@@ -48,21 +53,29 @@ const initial: BeadInstance[] = [
   { uid: newUid(), typeId: 'spacer-silver-3' },
 ];
 
-export const useDesigner = create<DesignerState>((set) => ({
+export const useDesigner = create<DesignerState>((set, get) => ({
   beads: initial,
   spawnFrom: null,
   selectedUid: null,
   recipe: null,
   recipeLoading: false,
   posterOpen: false,
+  rejectAt: 0,
 
-  add: (typeId, fromPoint) => set((s) => {
-    if (!findType(typeId)) return s;
-    return {
+  add: (typeId, fromPoint) => {
+    const t = findType(typeId);
+    if (!t) return false;
+    const cur = get().beads.reduce((s, b) => s + (findType(b.typeId)?.size ?? 0), 0);
+    if (cur + t.size > MAX_WRIST_MM) {
+      set({ rejectAt: Date.now() });
+      return false;
+    }
+    set((s) => ({
       beads: [...s.beads, { uid: newUid(), typeId }],
       spawnFrom: fromPoint ?? null,
-    };
-  }),
+    }));
+    return true;
+  },
   remove: (uid) => set((s) => ({ beads: s.beads.filter((b) => b.uid !== uid), selectedUid: null })),
   clear: () => set({ beads: [], selectedUid: null, recipe: null }),
   select: (uid) => set({ selectedUid: uid }),
@@ -71,9 +84,15 @@ export const useDesigner = create<DesignerState>((set) => ({
   applyRecipe: (r) =>
     set(() => {
       const next: BeadInstance[] = [];
+      let total = 0;
       for (const item of r.beads) {
-        if (!findType(item.typeId)) continue;
-        for (let i = 0; i < item.count; i++) next.push({ uid: newUid(), typeId: item.typeId });
+        const t = findType(item.typeId);
+        if (!t) continue;
+        for (let i = 0; i < item.count; i++) {
+          if (total + t.size > MAX_WRIST_MM) break;
+          next.push({ uid: newUid(), typeId: item.typeId });
+          total += t.size;
+        }
       }
       return { beads: next, recipe: r, selectedUid: null };
     }),

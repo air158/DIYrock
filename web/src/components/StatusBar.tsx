@@ -1,32 +1,47 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import CountUp from './CountUp';
-import { deriveBeadTypes, deriveTotalPrice, useDesigner } from '../state/store';
+import { deriveBeadTypes, deriveTotalPrice, MAX_WRIST_MM, useDesigner } from '../state/store';
 
 const MIN_CM = 13.5;
-const MAX_CM = 22.0;
+const MAX_CM = MAX_WRIST_MM / 10;
 
 export default function StatusBar() {
   const beads = useDesigner((s) => s.beads);
+  const rejectAt = useDesigner((s) => s.rejectAt);
   const types = useMemo(() => deriveBeadTypes(beads), [beads]);
   const price = useMemo(() => deriveTotalPrice(beads), [beads]);
+  const [shake, setShake] = useState(false);
+
+  useEffect(() => {
+    if (!rejectAt) return;
+    setShake(true);
+    const t = setTimeout(() => setShake(false), 500);
+    return () => clearTimeout(t);
+  }, [rejectAt]);
 
   const cm = useMemo(() => {
     const C = types.reduce((s, t) => s + t.size, 0);
     return C / 10;
   }, [types]);
 
-  let status: 'short' | 'long' | 'ok' = 'ok';
+  let status: 'short' | 'long' | 'ok' | 'full' = 'ok';
   if (cm > 0 && cm < MIN_CM) status = 'short';
   else if (cm > MAX_CM) status = 'long';
+  else if (shake) status = 'full';
 
   const tip =
     status === 'short' ? '长度过短，再加几颗' :
-    status === 'long'  ? '长度过长，可以减一些' : '尺寸合适';
+    status === 'long'  ? '长度过长，可以减一些' :
+    status === 'full'  ? '已到手围上限，先减一颗' : '尺寸合适';
 
   return (
     <div className="w-full flex justify-center pointer-events-none">
-      <div className="cap rounded-full px-4 py-2 flex items-center gap-3 pointer-events-auto">
+      <motion.div
+        animate={shake ? { x: [-6, 6, -4, 4, 0] } : { x: 0 }}
+        transition={{ duration: 0.4 }}
+        className="cap rounded-full px-4 py-2 flex items-center gap-3 pointer-events-auto"
+      >
         {/* 手围 */}
         <div className="flex items-center gap-1.5">
           <span className="text-[11px] text-ink2">手围</span>
@@ -54,19 +69,20 @@ export default function StatusBar() {
         <AnimatePresence>
           {status !== 'ok' && (
             <motion.span
-              key="tip"
+              key={status + '-tip'}
               initial={{ opacity: 0, x: -4 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0 }}
               className={`text-[11px] px-2 py-0.5 rounded-full ${
-                status === 'short' ? 'bg-warn/15 text-warn' : 'bg-amber-100 text-amber-600'
+                status === 'short' ? 'bg-warn/15 text-warn' :
+                status === 'full'  ? 'bg-warn/15 text-warn' : 'bg-amber-100 text-amber-600'
               }`}
             >
               {tip}
             </motion.span>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
     </div>
   );
 }

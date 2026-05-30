@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import Bead from './Bead';
 import { CATEGORIES, typesByCategory, type BeadKind } from '../data/catalog';
-import { useDesigner } from '../state/store';
+import { MAX_WRIST_MM, useDesigner } from '../state/store';
+import { findType } from '../data/catalog';
 
 export default function Drawer() {
   const [tab, setTab] = useState<BeadKind>('crystal');
@@ -13,6 +14,12 @@ export default function Drawer() {
 
   const list = useMemo(() => typesByCategory(catId), [catId]);
   const add = useDesigner((s) => s.add);
+  const beads = useDesigner((s) => s.beads);
+  const currentMm = useMemo(
+    () => beads.reduce((s, b) => s + (findType(b.typeId)?.size ?? 0), 0),
+    [beads],
+  );
+  const remainMm = MAX_WRIST_MM - currentMm;
 
   return (
     <div className="glass rounded-t-3xl border-t border-white/60 shadow-card flex flex-col"
@@ -69,14 +76,19 @@ export default function Drawer() {
 
         {/* 右：卡片网格 */}
         <div className="flex-1 overflow-y-auto p-3 grid grid-cols-3 gap-3 content-start">
-          {list.map((t) => (
+          {list.map((t) => {
+            const tooBig = t.size > remainMm;
+            return (
             <button
               key={t.id}
+              disabled={tooBig}
               onClick={(e) => {
                 const r = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
                 add(t.id, { x: r.left + r.width / 2, y: r.top + r.height / 2 });
               }}
-              className="relative bg-white/85 rounded-2xl p-2.5 shadow-soft hover:shadow-card transition active:scale-[0.97]"
+              className={`relative bg-white/85 rounded-2xl p-2.5 shadow-soft transition active:scale-[0.97] ${
+                tooBig ? 'opacity-40 grayscale cursor-not-allowed' : 'hover:shadow-card'
+              }`}
             >
               <div className="aspect-square w-full flex items-center justify-center">
                 <Bead type={t} diameter={Math.min(64, 28 + t.size * 3.2)} metallic={t.kind === 'accessory'} interactive={false} />
@@ -87,7 +99,8 @@ export default function Drawer() {
                 <span className="font-medium text-accent">¥{t.price}</span>
               </div>
             </button>
-          ))}
+            );
+          })}
           {list.length === 0 && (
             <div className="col-span-3 py-8 text-center text-ink2 text-sm">暂无可选</div>
           )}
